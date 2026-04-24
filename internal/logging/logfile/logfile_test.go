@@ -15,7 +15,11 @@ func TestNewBufferedLogFile(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join(t.TempDir(), "test.log")
-	w, err := logfile.NewBufferedLogFile(path, 4096, 100*time.Millisecond)
+	w, err := logfile.NewBufferedLogFile(logfile.Options{
+		Path:          path,
+		BufferSize:    4096,
+		FlushInterval: 100 * time.Millisecond,
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -29,7 +33,11 @@ func TestNewBufferedLogFile_InvalidPath(t *testing.T) {
 
 	// Directory does not exist — open should fail.
 	path := filepath.Join(t.TempDir(), "no", "such", "dir", "test.log")
-	w, err := logfile.NewBufferedLogFile(path, 4096, 100*time.Millisecond)
+	w, err := logfile.NewBufferedLogFile(logfile.Options{
+		Path:          path,
+		BufferSize:    4096,
+		FlushInterval: 100 * time.Millisecond,
+	})
 	if err == nil {
 		w.Close()
 		t.Fatal("expected error for invalid path, got nil")
@@ -40,7 +48,11 @@ func TestWriteAndClose(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join(t.TempDir(), "test.log")
-	w, err := logfile.NewBufferedLogFile(path, 4096, time.Hour)
+	w, err := logfile.NewBufferedLogFile(logfile.Options{
+		Path:          path,
+		BufferSize:    4096,
+		FlushInterval: time.Hour,
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -73,7 +85,11 @@ func TestWriteFlushes(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "test.log")
 	const flushInterval = 50 * time.Millisecond
 
-	w, err := logfile.NewBufferedLogFile(path, 4096, flushInterval)
+	w, err := logfile.NewBufferedLogFile(logfile.Options{
+		Path:          path,
+		BufferSize:    4096,
+		FlushInterval: flushInterval,
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -101,7 +117,11 @@ func TestCloseFlushesRemaining(t *testing.T) {
 
 	path := filepath.Join(t.TempDir(), "test.log")
 	// Large buffer + long interval so data stays buffered until Close.
-	w, err := logfile.NewBufferedLogFile(path, 1<<20, time.Hour)
+	w, err := logfile.NewBufferedLogFile(logfile.Options{
+		Path:          path,
+		BufferSize:    1 << 20,
+		FlushInterval: time.Hour,
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

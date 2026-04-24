@@ -1,0 +1,78 @@
+# Bot token from the Discord Developer Portal.
+discord_token = ""
+
+# Text Channel ID for privileged commands and health check failure notifications.
+#admin_channel_id = "123456789012345678"
+
+# Timeout for shutting down the app gracefully.
+#shutdown_timeout = "15s"
+
+[logs]
+# Enable debug-level logging.
+#debug = true
+
+[logs.file]
+# Enabled?
+#enabled = true
+# File path to write logs to.
+#path = "rythm5.log"
+# How often to flush logs to a file.
+#flush_interval = "1s"
+# How much logs to buffer before forced flush, in bytes.
+#buffer_size = 65536
+
+[commands]
+# Override prefix for prefix+message based commands.
+#classic_prefix = "$"
+
+[sessions]
+# Maximum number of concurrent voice sessions across all guilds.
+#limit = 1
+# How long a session can stay idle before it is destroyed.
+#inactivity_timeout = "5m"
+
+[transcoder]
+# Explicit path to the ffmpeg binary.
+#ffmpeg_path = "ffmpeg"
+# Override Opus bitrate in kbps.
+#bitrate = 96
+# How much audio to buffer ahead of playback.
+#buffer_duration = "15s"
+# CPU scheduling priority for the ffmpeg process. One of: "low", "normal".
+#cpu_priority = "low"
+# OOM killer priority hint (Linux). One of: "normal", "above_normal", "high".
+#oom_killer_priority = "above_normal"
+
+[ytdlp]
+# Explicit path to the yt-dlp binary.
+#path = "/usr/local/bin/yt-dlp"
+# Optional cookies.txt file used by yt-dlp for age-gated or private content.
+#cookie_path = "/etc/rythm5/cookies.txt"
+# Enable yt-dlp's on-disk cache.
+#cache_enabled = false
+# Explicit directory path for the yt-dlp cache.
+#cache_dir = "/var/cache/rythm5/ytdlp"
+# Maximum number of concurrent yt-dlp processes.
+# Critical for keeping small VMs from exploding due to Python and Javascript runtimes inability to consume sensible amounts of memory.
+#max_concurrency = 1
+# Same as [transcoder].cpu_priority.
+#cpu_priority = "low"
+# Same as [transcoder].oom_killer_priority.
+#oom_killer_priority = "high"
+
+[health_check]
+# How often to run the health checks.
+#interval = "5h"
+
+# Each check resolves `query` (a URL or search term) and reports failure to the admin channel (if set).
+#[[health_check.checks]]
+#label = "youtube-url"
+#query = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+#[[health_check.checks]]
+#label = "youtube-search"
+#query = "never gonna give you up"
+
+#[[health_check.checks]]
+#label = "spotify-album"
+#query = "https://open.spotify.com/track/4PTG3Z6ehGkBFwjybzWkR8"

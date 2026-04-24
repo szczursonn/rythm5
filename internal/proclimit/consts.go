@@ -7,14 +7,16 @@ var ErrUnsupportedPlatform = errors.New("proclimit: unsupported platform")
 type CPUPriority int
 
 const (
-	CPUPriorityLow CPUPriority = iota
+	CPUPriorityUnset CPUPriority = iota
+	CPUPriorityLow
 	CPUPriorityNormal
 )
 
 type OOMKillerPriority int
 
 const (
-	OOMKillerPriorityNormal OOMKillerPriority = iota
+	OOMKillerPriorityUnset OOMKillerPriority = iota
+	OOMKillerPriorityNormal
 	OOMKillerPriorityAboveNormal
 	OOMKillerPriorityHigh
 )
