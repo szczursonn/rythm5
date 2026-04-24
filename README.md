@@ -25,3 +25,36 @@ oom_killer_priority = "above_normal"
 cpu_priority = "low"
 oom_killer_priority = "high"
 ```
+
+## Docker
+
+### Build
+
+```sh
+docker build -t rythm5 .
+```
+
+### Run
+
+```sh
+docker run --rm \
+    -v "$PWD/rythm5.toml:/rythm5.toml:ro" \
+    rythm5
+```
+
+### yt-dlp cookie file
+
+```sh
+-v "$PWD/cookies.txt:/app/cookies.txt"
+```
+
+```toml
+[ytdlp]
+cookie_path = "/app/cookies.txt"
+```
+
+### Log file
+
+```sh
+-v "$PWD/rythm5.jsonl:/app/rythm5.jsonl"
+```
