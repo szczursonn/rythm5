@@ -39,13 +39,13 @@ func (c *command) Handle(req commands.Request) {
 
 	s.SetLooping(false)
 
-	skipped, err := s.Skip(req.Ctx())
+	result, err := s.Skip(req.Ctx())
 	if err != nil {
 		req.Reply(commands.ReplyUnexpectedError)
 		return
 	}
 
-	if skipped {
+	if result.AnythingToSkip {
 		req.Reply(commands.Reply{
 			Content: ":track_next: **Skipped!**",
 		})

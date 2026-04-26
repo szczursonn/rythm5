@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/events"
@@ -75,5 +76,6 @@ func NewDispatcher(opts DispatcherOptions) *Dispatcher {
 func (d *Dispatcher) Stop() {
 	d.client.RemoveEventListeners(d.eventListener)
 	d.cancelCtx()
+	time.Sleep(50 * time.Millisecond)
 	d.handlersWg.Wait()
 }

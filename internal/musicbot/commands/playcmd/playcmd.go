@@ -177,7 +177,7 @@ func (c *command) Handle(req commands.Request) {
 		}
 	}
 
-	isImmediatePlayback, err := s.Enqueue(req.Ctx(), tracksToAdd...)
+	result, err := s.Enqueue(req.Ctx(), tracksToAdd)
 	if err != nil {
 		req.Logger().Error("Failed to enqueue tracks", slog.Any("err", err))
 		<-initialReplyDoneCh
@@ -189,7 +189,7 @@ func (c *command) Handle(req commands.Request) {
 	shouldSuppressEmbeds := httpLinkInQueryRegex.MatchString(query)
 
 	if playlistToAdd == nil {
-		if isImmediatePlayback {
+		if result.ImmediatePlayback {
 			req.Reply(commands.Reply{
 				Content:        fmt.Sprintf(":musical_note: **Playing %s!**", messages.MakeMarkdownLink(tracksToAdd[0].Title(), tracksToAdd[0].WebpageURL())),
 				SuppressEmbeds: shouldSuppressEmbeds,

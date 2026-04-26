@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
@@ -37,6 +36,7 @@ import (
 	"github.com/szczursonn/rythm5/internal/musicbot/commands/slashcmd"
 	"github.com/szczursonn/rythm5/internal/musicbot/healthcheck"
 	"github.com/szczursonn/rythm5/internal/musicbot/sessions"
+	"github.com/szczursonn/rythm5/internal/safeudpconn"
 	"github.com/szczursonn/rythm5/internal/transcode"
 )
 
@@ -89,30 +89,12 @@ func main() {
 		return
 	}
 
-	shutdownCtxControllerDoneCh := make(chan struct{})
-	defer func() {
-		<-shutdownCtxControllerDoneCh
-	}()
 	ctx, cancelCtx := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancelCtx()
-	shutdownCtx, cancelShutdownCtx := context.WithCancel(context.Background())
-	defer cancelShutdownCtx()
 	go func() {
-		shutdownTimeout := cfg.ShutdownTimeout
-		if shutdownTimeout <= 0 {
-			shutdownTimeout = 15 * time.Second
-		}
-
-		defer close(shutdownCtxControllerDoneCh)
 		<-ctx.Done()
 		// Allow next signal to instakill the app
 		cancelCtx()
-
-		select {
-		case <-time.After(shutdownTimeout):
-			cancelShutdownCtx()
-		case <-shutdownCtx.Done():
-		}
 	}()
 
 	httpAudio := httpaudio.NewClient(httpaudio.ClientOptions{})
@@ -152,6 +134,9 @@ func main() {
 		),
 		bot.WithVoiceManagerConfigOpts(
 			voice.WithDaveSessionCreateFunc(golibdave.NewSession),
+			voice.WithConnConfigOpts(
+				voice.WithUDPConnCreateFunc(safeudpconn.NewUDPConn),
+			),
 		),
 		bot.WithEventListenerFunc(func(ev *events.Ready) {
 			logger.Info("Logged into Discord", slog.String("userId", ev.User.ID.String()), slog.String("username", ev.User.Username))
@@ -161,9 +146,10 @@ func main() {
 		logger.Error("Failed to create disgo client", slog.Any("err", err))
 		return
 	}
+	logger.Debug("Created disgo client")
 	defer func() {
 		logger.Info("Shutting down disgo client...")
-		client.Close(shutdownCtx)
+		client.Close(context.Background())
 		logger.Info("Shut down disgo client")
 	}()
 
@@ -171,6 +157,7 @@ func main() {
 		Logger:            logger.With("module", "sessions"),
 		Client:            client,
 		InactivityTimeout: cfg.Sessions.InactivityTimeout,
+		TrackSetupTimeout: cfg.Sessions.TrackSetupTimeout,
 		TranscoderOptions: transcode.Options{
 			FfmpegPath:        cfg.Transcoder.FfmpegPath,
 			Bitrate:           cfg.Transcoder.Bitrate,
@@ -180,9 +167,10 @@ func main() {
 		},
 		MaxSessions: cfg.Sessions.Limit,
 	})
+	logger.Debug("Created session manager")
 	defer func() {
 		logger.Info("Shutting down session manager...")
-		sessionManager.Destroy(shutdownCtx)
+		sessionManager.Destroy()
 		logger.Info("Shut down session manager")
 	}()
 
@@ -200,9 +188,10 @@ func main() {
 			NotificationsChannelID: cfg.AdminChannelID,
 			Interval:               cfg.HealthCheck.Interval,
 		})
+		logger.Debug("Created health check checker")
 		defer func() {
 			logger.Info("Shutting down health check checker...")
-			healthCheckChecker.Stop(shutdownCtx)
+			healthCheckChecker.Stop()
 			logger.Info("Shut down health check checker")
 		}()
 	}
@@ -230,6 +219,7 @@ func main() {
 		ClassicPrefix: cfg.Commands.ClassicPrefix,
 		Commands:      cmds,
 	})
+	logger.Debug("Created command dispatcher")
 	defer func() {
 		logger.Info("Shutting down command dispatcher...")
 		commandDispatcher.Stop()

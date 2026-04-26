@@ -10,10 +10,9 @@ import (
 )
 
 type rawConfig struct {
-	DiscordToken    string        `toml:"discord_token"`
-	AdminChannelID  string        `toml:"admin_channel_id"`
-	ShutdownTimeout time.Duration `toml:"shutdown_timeout"`
-	Logs            struct {
+	DiscordToken   string `toml:"discord_token"`
+	AdminChannelID string `toml:"admin_channel_id"`
+	Logs           struct {
 		Debug bool `toml:"debug"`
 		File  struct {
 			Enabled       bool          `toml:"enabled"`
@@ -28,6 +27,7 @@ type rawConfig struct {
 	Sessions struct {
 		Limit             int           `toml:"limit"`
 		InactivityTimeout time.Duration `toml:"inactivity_timeout"`
+		TrackSetupTimeout time.Duration `toml:"track_setup_timeout"`
 	} `toml:"sessions"`
 	Transcoder struct {
 		FfmpegPath        string        `toml:"ffmpeg_path"`
@@ -79,15 +79,14 @@ func parseOOMKillerPriority(value string) proclimit.OOMKillerPriority {
 }
 
 type Config struct {
-	DiscordToken    string
-	AdminChannelID  *snowflake.ID
-	ShutdownTimeout time.Duration
-	Logs            Logs
-	Commands        Commands
-	Sessions        Sessions
-	Transcoder      Transcoder
-	YtDlp           YtDlp
-	HealthCheck     HealthCheck
+	DiscordToken   string
+	AdminChannelID *snowflake.ID
+	Logs           Logs
+	Commands       Commands
+	Sessions       Sessions
+	Transcoder     Transcoder
+	YtDlp          YtDlp
+	HealthCheck    HealthCheck
 }
 
 type Logs struct {
@@ -109,6 +108,7 @@ type Commands struct {
 type Sessions struct {
 	Limit             int
 	InactivityTimeout time.Duration
+	TrackSetupTimeout time.Duration
 }
 
 type Transcoder struct {
@@ -148,9 +148,8 @@ func Load(path string) (*Config, error) {
 	}
 
 	return &Config{
-		DiscordToken:    rawCfg.DiscordToken,
-		AdminChannelID:  adminChannelID,
-		ShutdownTimeout: rawCfg.ShutdownTimeout,
+		DiscordToken:   rawCfg.DiscordToken,
+		AdminChannelID: adminChannelID,
 		Logs: Logs{
 			Debug: rawCfg.Logs.Debug,
 			File: LogFile{
@@ -166,6 +165,7 @@ func Load(path string) (*Config, error) {
 		Sessions: Sessions{
 			Limit:             rawCfg.Sessions.Limit,
 			InactivityTimeout: rawCfg.Sessions.InactivityTimeout,
+			TrackSetupTimeout: rawCfg.Sessions.TrackSetupTimeout,
 		},
 		Transcoder: Transcoder{
 			FfmpegPath:        rawCfg.Transcoder.FfmpegPath,

@@ -4,9 +4,6 @@ discord_token = ""
 # Text Channel ID for privileged commands and health check failure notifications.
 #admin_channel_id = "123456789012345678"
 
-# Timeout for shutting down the app gracefully.
-#shutdown_timeout = "15s"
-
 [logs]
 # Enable debug-level logging.
 #debug = true
@@ -30,6 +27,8 @@ discord_token = ""
 #limit = 1
 # How long a session can stay idle before it is destroyed.
 #inactivity_timeout = "5m"
+# How long can it take for the track's stream to be set up for playback.
+#track_setup_timeout = "15s"
 
 [transcoder]
 # Explicit path to the ffmpeg binary.

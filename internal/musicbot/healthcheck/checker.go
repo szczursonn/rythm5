@@ -83,10 +83,8 @@ func (c *Checker) worker() {
 		}
 	}
 }
-func (c *Checker) Stop(ctx context.Context) {
+
+func (c *Checker) Stop() {
 	c.cancelCtx()
-	select {
-	case <-c.workerDoneCh:
-	case <-ctx.Done():
-	}
+	<-c.workerDoneCh
 }

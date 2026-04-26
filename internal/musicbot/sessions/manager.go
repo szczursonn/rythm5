@@ -1,7 +1,6 @@
 package sessions
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"sync"
@@ -20,9 +19,10 @@ var ErrSessionLimitHit = errors.New(errPrefix + "too many concurrent sessions")
 type Options struct {
 	Logger            *slog.Logger
 	Client            *bot.Client
-	InactivityTimeout time.Duration
-	TranscoderOptions transcode.Options
 	MaxSessions       int
+	InactivityTimeout time.Duration
+	TrackSetupTimeout time.Duration
+	TranscoderOptions transcode.Options
 }
 
 func (opts *Options) validateAndApplyDefaults() {
@@ -34,12 +34,16 @@ func (opts *Options) validateAndApplyDefaults() {
 		opts.Logger = slog.Default()
 	}
 
+	if opts.MaxSessions <= 0 {
+		opts.MaxSessions = -1
+	}
+
 	if opts.InactivityTimeout <= 0 {
 		opts.InactivityTimeout = 5 * time.Minute
 	}
 
-	if opts.MaxSessions <= 0 {
-		opts.MaxSessions = -1
+	if opts.TrackSetupTimeout <= 0 {
+		opts.TrackSetupTimeout = 15 * time.Second
 	}
 }
 
@@ -47,9 +51,11 @@ type Manager struct {
 	logger            *slog.Logger
 	client            *bot.Client
 	inactivityTimeout time.Duration
+	trackSetupTimeout time.Duration
 	transcoderOptions transcode.Options
-	maxSessions       int
-	eventListener     bot.EventListener
+
+	maxSessions   int
+	eventListener bot.EventListener
 
 	mu       sync.Mutex
 	sessions map[snowflake.ID]*Session
@@ -62,11 +68,12 @@ func NewManager(opts Options) *Manager {
 		logger:            opts.Logger,
 		client:            opts.Client,
 		inactivityTimeout: opts.InactivityTimeout,
-		maxSessions:       opts.MaxSessions,
+		trackSetupTimeout: opts.TrackSetupTimeout,
 		transcoderOptions: opts.TranscoderOptions,
+		maxSessions:       opts.MaxSessions,
 		sessions:          make(map[snowflake.ID]*Session),
 	}
-	m.eventListener = bot.NewListenerFunc(m.handleGuildVoiceLeave)
+	m.eventListener = bot.NewListenerFunc(m.handleGuildVoiceStateUpdate)
 
 	m.client.AddEventListeners(m.eventListener)
 
@@ -116,7 +123,7 @@ func (m *Manager) detach(guildID snowflake.ID) {
 	delete(m.sessions, guildID)
 }
 
-func (m *Manager) handleGuildVoiceLeave(ev *events.GuildVoiceLeave) {
+func (m *Manager) handleGuildVoiceStateUpdate(ev *events.GuildVoiceStateUpdate) {
 	if ev.VoiceState.UserID != ev.Client().ID() {
 		return
 	}
@@ -126,10 +133,10 @@ func (m *Manager) handleGuildVoiceLeave(ev *events.GuildVoiceLeave) {
 		return
 	}
 
-	s.handleVoiceLeave()
+	s.handleVoiceStateUpdate(ev.VoiceState.ChannelID)
 }
 
-func (m *Manager) Destroy(destroyCtx context.Context) {
+func (m *Manager) Destroy() {
 	m.client.RemoveEventListeners(m.eventListener)
 
 	m.mu.Lock()
@@ -140,7 +147,12 @@ func (m *Manager) Destroy(destroyCtx context.Context) {
 	var wg sync.WaitGroup
 	for _, s := range sessions {
 		wg.Go(func() {
-			s.destroy(destroyCtx, DestroyReasonManagerDestroy)
+			select {
+			case s.destroyReqCh <- DestroyReasonManagerDestroy:
+			default:
+			}
+
+			<-s.destroyDoneCh
 		})
 	}
 	wg.Wait()

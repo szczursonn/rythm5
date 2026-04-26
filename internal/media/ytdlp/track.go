@@ -2,6 +2,7 @@ package ytdlp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -69,16 +70,16 @@ func (t *track) ensureStreamData(ctx context.Context) error {
 	}
 
 	if queryResult.Track == nil {
-		return fmt.Errorf(errPrefix + "streamable track query did not return a track")
+		return errors.New(errPrefix + "streamable track query did not return a track")
 	}
 
 	typedTrack, ok := queryResult.Track.(*track)
 	if !ok {
-		return fmt.Errorf(errPrefix + "streamable track query returned unknown track type")
+		return errors.New(errPrefix + "streamable track query returned unknown track type")
 	}
 
 	if typedTrack.streamURL == "" {
-		return fmt.Errorf(errPrefix + "streamable track query returned track with no streaming data")
+		return errors.New(errPrefix + "streamable track query returned track with no streaming data")
 	}
 
 	t.mu.Lock()
@@ -96,7 +97,7 @@ func (t *track) ensureStreamData(ctx context.Context) error {
 
 func (qs *querySource) extractTrack(yre *ytdlpResultEntry) (*track, error) {
 	if yre.Title == "" {
-		return nil, fmt.Errorf(errPrefix + "empty title")
+		return nil, errors.New(errPrefix + "empty title")
 	}
 
 	t := &track{

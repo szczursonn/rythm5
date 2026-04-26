@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"os/exec"
@@ -174,7 +173,7 @@ func (qs *querySource) execYtDlp(ctx context.Context, args ...string) (*ytdlpRes
 			<-qs.semaphore
 		}()
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, fmt.Errorf(errPrefix+"waiting on semaphore: %w", ctx.Err())
 	}
 
 	cmdArgs := make([]string, 0, len(qs.baseArgs)+len(args))
@@ -197,9 +196,11 @@ func (qs *querySource) execYtDlp(ctx context.Context, args ...string) (*ytdlpRes
 		proclimit.ApplyCPUPriority(cmd.Process.Pid, qs.cpuPriority)
 	}
 
-	// yt-dlp returns non-zero status if error occured, even if it recovered from it
-	if err := cmd.Wait(); err != nil && (errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)) {
-		return nil, err
+	// no error check: yt-dlp sometimes returns non-zero status if error occured, even if it has successfully recovered from it
+	cmd.Wait()
+
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf(errPrefix+"running yt-dlp: %w", err)
 	}
 
 	res := &ytdlpResult{}

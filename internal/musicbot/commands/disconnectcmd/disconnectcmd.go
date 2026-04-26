@@ -36,7 +36,7 @@ func (c *command) Handle(req commands.Request) {
 		return
 	}
 
-	s.Destroy(req.Ctx())
+	s.Destroy()
 	req.Reply(commands.Reply{
 		Content: ":wave: **Disconnected!**",
 	})
