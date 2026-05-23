@@ -1,11 +1,11 @@
-//go:build !linux && !darwin && !windows
+//go:build !linux && !darwin
 
 package proclimit
 
-func ApplyOOMKillerPriority(pid int, priority OOMKillerPriority) error {
+func SetNiceValue(pid int, value int) error {
 	return ErrUnsupportedPlatform
 }
 
-func ApplyCPUPriority(pid int, priority CPUPriority) error {
+func SetOOMScoreAdj(pid int, score int) error {
 	return ErrUnsupportedPlatform
 }

@@ -2,9 +2,9 @@
 
 ![play command invocation](/docs/query.png)
 
-- Supports Youtube, Soundcloud and Spotify
-- Requires [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org/)
-- Build: Requires CGO (depends on [godave](https://github.com/disgoorg/godave))
+- Supports Youtube, Soundcloud and Spotify audio playback
+- Depends on [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org/)
+- Requires CGO (depends on [godave](https://github.com/disgoorg/godave))
 - Supersedes [rythm4](https://github.com/szczursonn/rythm4)
 
 ## Minimal [rythm5.toml](/rythm5.example.toml) config file
@@ -16,17 +16,21 @@ discord_token = "xyz"
 
 ## Recommended options for small VMs
 
+To keep them from exploding
+
 ```toml
 [transcoder]
-cpu_priority = "low"
-oom_killer_priority = "above_normal"
+nice_value = 5
+oom_score_adj = 500
 
 [ytdlp]
-cpu_priority = "low"
-oom_killer_priority = "high"
+nice_value = 10
+oom_score_adj = 1000
 ```
 
 ## Docker
+
+The container expects `/data` to be mounted.
 
 ### Build
 
@@ -37,24 +41,11 @@ docker build -t rythm5 .
 ### Run
 
 ```sh
-docker run --rm \
-    -v "$PWD/rythm5.toml:/rythm5.toml:ro" \
+docker run -d --init --restart unless-stopped \
+    -v "$PWD/data:/data" \
     rythm5
 ```
 
-### yt-dlp cookie file
+## TODO
 
-```sh
--v "$PWD/cookies.txt:/app/cookies.txt"
-```
-
-```toml
-[ytdlp]
-cookie_path = "/app/cookies.txt"
-```
-
-### Log file
-
-```sh
--v "$PWD/rythm5.jsonl:/app/rythm5.jsonl"
-```
+- Get rid of CGO

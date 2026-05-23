@@ -16,12 +16,12 @@ import (
 const errPrefix = "media/ytdlp: "
 
 type querySource struct {
-	httpAudio         *httpaudio.Client
-	binaryPath        string
-	cookieFilePath    string
-	baseArgs          []string
-	cpuPriority       proclimit.CPUPriority
-	oomKillerPriority proclimit.OOMKillerPriority
+	httpAudio      *httpaudio.Client
+	binaryPath     string
+	cookieFilePath string
+	baseArgs       []string
+	niceValue      *int
+	oomScoreAdj    *int
 
 	semaphore chan struct{}
 }
@@ -29,14 +29,14 @@ type querySource struct {
 var _ media.QuerySource = (*querySource)(nil)
 
 type QuerySourceOptions struct {
-	HttpAudio         *httpaudio.Client
-	BinaryPath        string
-	CookieFilePath    string
-	CacheEnabled      bool
-	CacheDir          string
-	MaxConcurrency    int
-	CPUPriority       proclimit.CPUPriority
-	OOMKillerPriority proclimit.OOMKillerPriority
+	HttpAudio      *httpaudio.Client
+	BinaryPath     string
+	CookieFilePath string
+	CacheEnabled   bool
+	CacheDir       string
+	MaxConcurrency int
+	NiceValue      *int
+	OOMScoreAdj    *int
 }
 
 func NewQuerySource(opts QuerySourceOptions) media.QuerySource {
@@ -57,13 +57,13 @@ func NewQuerySource(opts QuerySourceOptions) media.QuerySource {
 	}
 
 	return &querySource{
-		httpAudio:         opts.HttpAudio,
-		binaryPath:        binaryPath,
-		cookieFilePath:    opts.CookieFilePath,
-		baseArgs:          baseArgs,
-		cpuPriority:       opts.CPUPriority,
-		oomKillerPriority: opts.OOMKillerPriority,
-		semaphore:         make(chan struct{}, max(opts.MaxConcurrency, 1)),
+		httpAudio:      opts.HttpAudio,
+		binaryPath:     binaryPath,
+		cookieFilePath: opts.CookieFilePath,
+		baseArgs:       baseArgs,
+		niceValue:      opts.NiceValue,
+		oomScoreAdj:    opts.OOMScoreAdj,
+		semaphore:      make(chan struct{}, max(opts.MaxConcurrency, 1)),
 	}
 }
 
@@ -189,11 +189,11 @@ func (qs *querySource) execYtDlp(ctx context.Context, args ...string) (*ytdlpRes
 		return nil, fmt.Errorf(errPrefix+"failed to start process: %w", err)
 	}
 
-	if qs.oomKillerPriority != proclimit.OOMKillerPriorityUnset {
-		proclimit.ApplyOOMKillerPriority(cmd.Process.Pid, qs.oomKillerPriority)
+	if qs.niceValue != nil {
+		proclimit.SetNiceValue(cmd.Process.Pid, *qs.niceValue)
 	}
-	if qs.cpuPriority != proclimit.CPUPriorityUnset {
-		proclimit.ApplyCPUPriority(cmd.Process.Pid, qs.cpuPriority)
+	if qs.oomScoreAdj != nil {
+		proclimit.SetOOMScoreAdj(cmd.Process.Pid, *qs.oomScoreAdj)
 	}
 
 	// no error check: yt-dlp sometimes returns non-zero status if error occured, even if it has successfully recovered from it

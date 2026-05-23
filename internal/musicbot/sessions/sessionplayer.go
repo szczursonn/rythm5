@@ -12,6 +12,7 @@ import (
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/rest"
+	"github.com/disgoorg/disgo/voice"
 	"github.com/szczursonn/rythm5/internal/media"
 	"github.com/szczursonn/rythm5/internal/musicbot/messages"
 	"github.com/szczursonn/rythm5/internal/transcode"
@@ -358,7 +359,7 @@ func (sp *sessionPlayer) stopInactivityTimeout() {
 	}
 }
 
-// impl: voice.OpusFrameProvider
+var _ voice.OpusFrameProvider = (*sessionPlayer)(nil)
 
 func (sp *sessionPlayer) ProvideOpusFrame() ([]byte, error) {
 	sp.transcoderMu.Lock()

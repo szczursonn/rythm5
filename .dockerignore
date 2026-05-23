@@ -1,6 +1,8 @@
 .git
 .github
 docs
+data/
+compose.yaml
 *.md
 *.toml
 *.jsonl

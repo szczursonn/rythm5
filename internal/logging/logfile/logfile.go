@@ -3,6 +3,7 @@ package logfile
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -10,7 +11,7 @@ import (
 
 const errPrefix = "logging/logfile: "
 
-type bufferedLogFileWriter struct {
+type bufferedLogFile struct {
 	ctx          context.Context
 	cancelCtx    context.CancelFunc
 	workerDoneCh chan struct{}
@@ -27,7 +28,7 @@ type Options struct {
 
 func NewBufferedLogFile(opts Options) (io.WriteCloser, error) {
 	if opts.Path == "" {
-		panic(errPrefix + "path is required")
+		return nil, fmt.Errorf(errPrefix + "path is required")
 	}
 
 	if opts.FlushInterval <= 0 {
@@ -40,46 +41,46 @@ func NewBufferedLogFile(opts Options) (io.WriteCloser, error) {
 
 	file, err := os.OpenFile(opts.Path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(errPrefix+"opening file: %w", err)
 	}
 
-	blfw := &bufferedLogFileWriter{
+	blf := &bufferedLogFile{
 		workerDoneCh: make(chan struct{}),
 		file:         file,
 		buff:         bufio.NewWriterSize(file, opts.BufferSize),
 	}
-	blfw.ctx, blfw.cancelCtx = context.WithCancel(context.Background())
+	blf.ctx, blf.cancelCtx = context.WithCancel(context.Background())
 
-	go blfw.flushWorker(opts.FlushInterval)
+	go blf.flushWorker(opts.FlushInterval)
 
-	return blfw, nil
+	return blf, nil
 }
 
-func (blfw *bufferedLogFileWriter) Write(p []byte) (n int, err error) {
-	return blfw.buff.Write(p)
+func (blf *bufferedLogFile) Write(p []byte) (n int, err error) {
+	return blf.buff.Write(p)
 }
 
-func (blfw *bufferedLogFileWriter) Close() error {
-	blfw.cancelCtx()
-	<-blfw.workerDoneCh
+func (blf *bufferedLogFile) Close() error {
+	blf.cancelCtx()
+	<-blf.workerDoneCh
 
-	return blfw.file.Close()
+	return blf.file.Close()
 }
 
-func (blfw *bufferedLogFileWriter) flushWorker(flushInterval time.Duration) {
-	defer close(blfw.workerDoneCh)
-	defer blfw.buff.Flush()
+func (blf *bufferedLogFile) flushWorker(flushInterval time.Duration) {
+	defer close(blf.workerDoneCh)
+	defer blf.buff.Flush()
 
 	flushTicker := time.NewTicker(flushInterval)
 	defer flushTicker.Stop()
 
 	for {
 		select {
-		case <-blfw.ctx.Done():
+		case <-blf.ctx.Done():
 			return
 		case <-flushTicker.C:
 		}
 
-		blfw.buff.Flush()
+		blf.buff.Flush()
 	}
 }

@@ -7,7 +7,9 @@ import (
 	"strings"
 )
 
-var ErrUnsupportedQuery = errors.New("media: unsupported query")
+const errPrefix = "media: "
+
+var ErrUnsupportedQuery = errors.New(errPrefix + "unsupported query")
 
 const QuerySchemeGenericSearch = "search"
 

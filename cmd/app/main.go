@@ -100,14 +100,14 @@ func main() {
 	httpAudio := httpaudio.NewClient(httpaudio.ClientOptions{})
 
 	ytdlpQuerySource := ytdlp.NewQuerySource(ytdlp.QuerySourceOptions{
-		HttpAudio:         httpAudio,
-		BinaryPath:        cfg.YtDlp.Path,
-		CookieFilePath:    cfg.YtDlp.CookiePath,
-		CacheEnabled:      cfg.YtDlp.CacheEnabled,
-		CacheDir:          cfg.YtDlp.CacheDir,
-		MaxConcurrency:    cfg.YtDlp.MaxConcurrency,
-		CPUPriority:       cfg.YtDlp.CPUPriority,
-		OOMKillerPriority: cfg.YtDlp.OOMKillerPriority,
+		HttpAudio:      httpAudio,
+		BinaryPath:     cfg.YtDlp.Path,
+		CookieFilePath: cfg.YtDlp.CookiePath,
+		CacheEnabled:   cfg.YtDlp.CacheEnabled,
+		CacheDir:       cfg.YtDlp.CacheDir,
+		MaxConcurrency: cfg.YtDlp.MaxConcurrency,
+		NiceValue:      cfg.YtDlp.NiceValue,
+		OOMScoreAdj:    cfg.YtDlp.OOMScoreAdj,
 	})
 
 	spotifyQuerySource := spotify.NewQueryHandler(spotify.QueryHandlerOptions{
@@ -139,7 +139,7 @@ func main() {
 			),
 		),
 		bot.WithEventListenerFunc(func(ev *events.Ready) {
-			logger.Info("Logged into Discord", slog.String("userId", ev.User.ID.String()), slog.String("username", ev.User.Username))
+			logger.Info("Logged into Discord", slog.String("userID", ev.User.ID.String()), slog.String("username", ev.User.Username))
 		}),
 	)
 	if err != nil {
@@ -159,11 +159,11 @@ func main() {
 		InactivityTimeout: cfg.Sessions.InactivityTimeout,
 		TrackSetupTimeout: cfg.Sessions.TrackSetupTimeout,
 		TranscoderOptions: transcode.Options{
-			FfmpegPath:        cfg.Transcoder.FfmpegPath,
-			Bitrate:           cfg.Transcoder.Bitrate,
-			BufferDuration:    cfg.Transcoder.BufferDuration,
-			CPUPriority:       cfg.Transcoder.CPUPriority,
-			OOMKillerPriority: cfg.Transcoder.OOMKillerPriority,
+			FfmpegPath:     cfg.Transcoder.FfmpegPath,
+			Bitrate:        cfg.Transcoder.Bitrate,
+			BufferDuration: cfg.Transcoder.BufferDuration,
+			NiceValue:      cfg.Transcoder.NiceValue,
+			OOMScoreAdj:    cfg.Transcoder.OOMScoreAdj,
 		},
 		MaxSessions: cfg.Sessions.Limit,
 	})

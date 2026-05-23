@@ -6,7 +6,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/szczursonn/rythm5/internal/musicbot/healthcheck"
-	"github.com/szczursonn/rythm5/internal/proclimit"
 )
 
 type rawConfig struct {
@@ -30,20 +29,20 @@ type rawConfig struct {
 		TrackSetupTimeout time.Duration `toml:"track_setup_timeout"`
 	} `toml:"sessions"`
 	Transcoder struct {
-		FfmpegPath        string        `toml:"ffmpeg_path"`
-		Bitrate           int           `toml:"bitrate"`
-		BufferDuration    time.Duration `toml:"buffer_duration"`
-		CPUPriority       string        `toml:"cpu_priority"`
-		OOMKillerPriority string        `toml:"oom_killer_priority"`
+		FfmpegPath     string        `toml:"ffmpeg_path"`
+		Bitrate        int           `toml:"bitrate"`
+		BufferDuration time.Duration `toml:"buffer_duration"`
+		NiceValue      *int          `toml:"nice_value"`
+		OOMScoreAdj    *int          `toml:"oom_score_adj"`
 	} `toml:"transcoder"`
 	YtDlp struct {
-		Path              string `toml:"path"`
-		CookiePath        string `toml:"cookie_path"`
-		CacheEnabled      bool   `toml:"cache_enabled"`
-		CacheDir          string `toml:"cache_dir"`
-		MaxConcurrency    int    `toml:"max_concurrency"`
-		CPUPriority       string `toml:"cpu_priority"`
-		OOMKillerPriority string `toml:"oom_killer_priority"`
+		Path           string `toml:"path"`
+		CookiePath     string `toml:"cookie_path"`
+		CacheEnabled   bool   `toml:"cache_enabled"`
+		CacheDir       string `toml:"cache_dir"`
+		MaxConcurrency int    `toml:"max_concurrency"`
+		NiceValue      *int   `toml:"nice_value"`
+		OOMScoreAdj    *int   `toml:"oom_score_adj"`
 	} `toml:"ytdlp"`
 	HealthCheck struct {
 		Interval time.Duration `toml:"interval"`
@@ -52,30 +51,6 @@ type rawConfig struct {
 			Query string `toml:"query"`
 		} `toml:"checks"`
 	} `toml:"health_check"`
-}
-
-func parseCPUPriority(value string) proclimit.CPUPriority {
-	switch value {
-	case "low":
-		return proclimit.CPUPriorityLow
-	case "normal":
-		return proclimit.CPUPriorityNormal
-	default:
-		return proclimit.CPUPriorityUnset
-	}
-}
-
-func parseOOMKillerPriority(value string) proclimit.OOMKillerPriority {
-	switch value {
-	case "normal":
-		return proclimit.OOMKillerPriorityNormal
-	case "above_normal":
-		return proclimit.OOMKillerPriorityAboveNormal
-	case "high":
-		return proclimit.OOMKillerPriorityHigh
-	default:
-		return proclimit.OOMKillerPriorityUnset
-	}
 }
 
 type Config struct {
@@ -112,11 +87,11 @@ type Sessions struct {
 }
 
 type Transcoder struct {
-	FfmpegPath        string
-	Bitrate           int
-	BufferDuration    time.Duration
-	CPUPriority       proclimit.CPUPriority
-	OOMKillerPriority proclimit.OOMKillerPriority
+	FfmpegPath     string
+	Bitrate        int
+	BufferDuration time.Duration
+	NiceValue      *int
+	OOMScoreAdj    *int
 }
 
 type HealthCheck struct {
@@ -125,13 +100,13 @@ type HealthCheck struct {
 }
 
 type YtDlp struct {
-	Path              string
-	CookiePath        string
-	CacheEnabled      bool
-	CacheDir          string
-	MaxConcurrency    int
-	CPUPriority       proclimit.CPUPriority
-	OOMKillerPriority proclimit.OOMKillerPriority
+	Path           string
+	CookiePath     string
+	CacheEnabled   bool
+	CacheDir       string
+	MaxConcurrency int
+	NiceValue      *int
+	OOMScoreAdj    *int
 }
 
 func Load(path string) (*Config, error) {
@@ -168,11 +143,11 @@ func Load(path string) (*Config, error) {
 			TrackSetupTimeout: rawCfg.Sessions.TrackSetupTimeout,
 		},
 		Transcoder: Transcoder{
-			FfmpegPath:        rawCfg.Transcoder.FfmpegPath,
-			Bitrate:           rawCfg.Transcoder.Bitrate,
-			BufferDuration:    rawCfg.Transcoder.BufferDuration,
-			CPUPriority:       parseCPUPriority(rawCfg.Transcoder.CPUPriority),
-			OOMKillerPriority: parseOOMKillerPriority(rawCfg.Transcoder.OOMKillerPriority),
+			FfmpegPath:     rawCfg.Transcoder.FfmpegPath,
+			Bitrate:        rawCfg.Transcoder.Bitrate,
+			BufferDuration: rawCfg.Transcoder.BufferDuration,
+			NiceValue:      rawCfg.Transcoder.NiceValue,
+			OOMScoreAdj:    rawCfg.Transcoder.OOMScoreAdj,
 		},
 		HealthCheck: HealthCheck{
 			Interval: rawCfg.HealthCheck.Interval,
@@ -188,13 +163,13 @@ func Load(path string) (*Config, error) {
 			}(),
 		},
 		YtDlp: YtDlp{
-			Path:              rawCfg.YtDlp.Path,
-			CookiePath:        rawCfg.YtDlp.CookiePath,
-			CacheEnabled:      rawCfg.YtDlp.CacheEnabled,
-			CacheDir:          rawCfg.YtDlp.CacheDir,
-			MaxConcurrency:    rawCfg.YtDlp.MaxConcurrency,
-			CPUPriority:       parseCPUPriority(rawCfg.YtDlp.CPUPriority),
-			OOMKillerPriority: parseOOMKillerPriority(rawCfg.YtDlp.OOMKillerPriority),
+			Path:           rawCfg.YtDlp.Path,
+			CookiePath:     rawCfg.YtDlp.CookiePath,
+			CacheEnabled:   rawCfg.YtDlp.CacheEnabled,
+			CacheDir:       rawCfg.YtDlp.CacheDir,
+			MaxConcurrency: rawCfg.YtDlp.MaxConcurrency,
+			NiceValue:      rawCfg.YtDlp.NiceValue,
+			OOMScoreAdj:    rawCfg.YtDlp.OOMScoreAdj,
 		},
 	}, nil
 }

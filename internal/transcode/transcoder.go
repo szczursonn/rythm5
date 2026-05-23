@@ -29,11 +29,11 @@ var bufPool = bufferpool.New(512)
 var ErrClosed = errors.New(errPrefix + "closed")
 
 type Options struct {
-	FfmpegPath        string
-	Bitrate           int
-	BufferDuration    time.Duration
-	CPUPriority       proclimit.CPUPriority
-	OOMKillerPriority proclimit.OOMKillerPriority
+	FfmpegPath     string
+	Bitrate        int
+	BufferDuration time.Duration
+	NiceValue      *int
+	OOMScoreAdj    *int
 }
 
 func (opts *Options) applyDefaults() {
@@ -95,11 +95,11 @@ func NewTranscoder(src io.ReadCloser, opts Options) (*Transcoder, error) {
 		return nil, fmt.Errorf(errPrefix+"starting ffmpeg process: %w", err)
 	}
 
-	if opts.OOMKillerPriority != proclimit.OOMKillerPriorityUnset {
-		proclimit.ApplyOOMKillerPriority(cmd.Process.Pid, opts.OOMKillerPriority)
+	if opts.NiceValue != nil {
+		proclimit.SetNiceValue(cmd.Process.Pid, *opts.NiceValue)
 	}
-	if opts.CPUPriority != proclimit.CPUPriorityUnset {
-		proclimit.ApplyCPUPriority(cmd.Process.Pid, opts.CPUPriority)
+	if opts.OOMScoreAdj != nil {
+		proclimit.SetOOMScoreAdj(cmd.Process.Pid, *opts.OOMScoreAdj)
 	}
 
 	t := &Transcoder{

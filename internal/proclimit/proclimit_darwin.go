@@ -2,6 +2,6 @@
 
 package proclimit
 
-func ApplyOOMKillerPriority(pid int, priority OOMKillerPriority) error {
+func SetOOMScoreAdj(pid int, score int) error {
 	return ErrUnsupportedPlatform
 }

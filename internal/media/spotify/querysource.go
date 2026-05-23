@@ -217,41 +217,41 @@ func (qs *querySource) getNextJSData(ctx context.Context, u uri) (*nextJSData, e
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf(errPrefix+"failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf(errPrefix+"failed to do request: %w", err)
+		return nil, fmt.Errorf("failed to do request: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(errPrefix+"unexpected status code: %d", res.StatusCode)
+		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf(errPrefix+"failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	nextDataStartIndex := bytes.LastIndex(body, []byte(`{"props":{"pageProps":`))
 	if nextDataStartIndex == -1 {
-		return nil, fmt.Errorf(errPrefix + "failed to find nextjs data section start")
+		return nil, fmt.Errorf("failed to find nextjs data section start")
 	}
 
 	nextDataEndIndex := bytes.LastIndex(body[nextDataStartIndex:], []byte("</script>"))
 	if nextDataEndIndex == -1 {
-		return nil, fmt.Errorf(errPrefix + "failed to find nextjs data section end")
+		return nil, fmt.Errorf("failed to find nextjs data section end")
 	}
 
 	data := &nextJSData{}
 	if err = json.Unmarshal(body[nextDataStartIndex:nextDataStartIndex+nextDataEndIndex], data); err != nil {
-		return nil, fmt.Errorf(errPrefix+"failed to unmarshal nextjs data: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal nextjs data: %w", err)
 	}
 
 	if data.Props.PageProps.Status != 0 {
-		return nil, fmt.Errorf(errPrefix+"unexpected status code in nextjs data: %d", data.Props.PageProps.Status)
+		return nil, fmt.Errorf("unexpected status code in nextjs data: %d", data.Props.PageProps.Status)
 	}
 
 	return data, nil

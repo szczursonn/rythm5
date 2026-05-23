@@ -1,0 +1,8 @@
+services:
+  rythm5:
+    build: .
+    image: rythm5
+    restart: unless-stopped
+    init: true
+    volumes:
+      - ./data:/data

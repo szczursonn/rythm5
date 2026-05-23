@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
-ARG GO_VERSION=1.26.2
+ARG GO_VERSION=1.26.3
 ARG LIBDAVE_VERSION=1.1.0
 ARG YTDLP_VERSION=2026.03.17
-ARG DENO_VERSION=2.7.13
+ARG DENO_VERSION=2.8.0
 
 FROM debian:trixie-slim AS libdavefetcher
 ARG LIBDAVE_VERSION
@@ -30,7 +30,7 @@ RUN mkdir -p /out/usr/local/include /out/usr/local/lib/pkgconfig \
        > /out/usr/local/lib/pkgconfig/dave.pc
 
 
-FROM golang:1.26.2-trixie AS builder
+FROM golang:1.26.3-trixie AS builder
 RUN apt-get update \
        && apt-get install -y --no-install-recommends pkg-config \
        && rm -rf /var/lib/apt/lists/*
@@ -67,9 +67,10 @@ RUN curl -fsSL "https://github.com/denoland/deno/releases/download/v${DENO_VERSI
 COPY --from=libdavefetcher /out/usr/local/lib/libdave.so /usr/local/lib/libdave.so
 RUN ldconfig
 
-RUN useradd --system --uid 10001 --home-dir /app --create-home rythm5
-WORKDIR /app
-COPY --from=builder --chown=rythm5:rythm5 /out/rythm5 /app/rythm5
+RUN useradd --system --uid 10001 --home-dir /data --create-home rythm5
+ENV HOME=/data
+WORKDIR /data
+COPY --from=builder /out/rythm5 /usr/local/bin/rythm5
 
 USER rythm5
-CMD ["/app/rythm5", "-config", "rythm5.toml"]
+CMD ["rythm5", "-config", "/data/rythm5.toml"]
