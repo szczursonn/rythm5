@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
-ARG GO_VERSION=1.26.3
-ARG LIBDAVE_VERSION=1.1.0
-ARG YTDLP_VERSION=2026.03.17
-ARG DENO_VERSION=2.8.0
+ARG GO_VERSION=1.26.4
+ARG LIBDAVE_VERSION=1.1.1
+ARG YTDLP_VERSION=2026.06.09
+ARG DENO_VERSION=2.8.2
 
 FROM debian:trixie-slim AS libdavefetcher
 ARG LIBDAVE_VERSION
@@ -30,7 +30,7 @@ RUN mkdir -p /out/usr/local/include /out/usr/local/lib/pkgconfig \
        > /out/usr/local/lib/pkgconfig/dave.pc
 
 
-FROM golang:1.26.3-trixie AS builder
+FROM golang:${GO_VERSION}-trixie AS builder
 RUN apt-get update \
        && apt-get install -y --no-install-recommends pkg-config \
        && rm -rf /var/lib/apt/lists/*

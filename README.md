@@ -30,7 +30,7 @@ oom_score_adj = 1000
 
 ## Docker
 
-The container expects `/data` to be mounted.
+The container expects `/data` to be mounted. Config is read from `/data/rythm5.toml` and yt-dlp cookies from `/data/cookies.txt`.
 
 ### Build
 
@@ -38,7 +38,7 @@ The container expects `/data` to be mounted.
 docker build -t rythm5 .
 ```
 
-### Run
+### Run (no compose)
 
 ```sh
 docker run -d --init --restart unless-stopped \
