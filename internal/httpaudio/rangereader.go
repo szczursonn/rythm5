@@ -85,7 +85,7 @@ func (rr *rangeReader) fetchNextChunk() error {
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rr.url, nil)
 	if err != nil {
-		return fmt.Errorf(errPrefix+"rangereader GET request create: %w", err)
+		return fmt.Errorf(errPrefix+"rangereader GET \"%s\" request create: %w", rr.url, err)
 	}
 	for k, v := range rr.httpHeaders {
 		req.Header.Set(k, v)
@@ -94,12 +94,12 @@ func (rr *rangeReader) fetchNextChunk() error {
 
 	resp, err := rr.client.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf(errPrefix+"rangereader GET request failed for range %d-%d: %w", startOffset, endOffset, err)
+		return fmt.Errorf(errPrefix+"rangereader GET \"%s\" with headers %s request failed for range %d-%d: %w", rr.url, headersErrorString(req.Header), startOffset, endOffset, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf(errPrefix+"rangereader GET returned unexpected status %d for range %d-%d", resp.StatusCode, startOffset, endOffset)
+		return fmt.Errorf(errPrefix+"rangereader GET \"%s\" with headers %s returned unexpected status %d for range %d-%d", rr.url, headersErrorString(req.Header), resp.StatusCode, startOffset, endOffset)
 	}
 
 	rr.bufStartPos = 0
@@ -107,7 +107,7 @@ func (rr *rangeReader) fetchNextChunk() error {
 	rr.nextFetchOffset += n
 	rr.bufEndPos = n
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return fmt.Errorf(errPrefix+"rangereader GET reading body for range %d-%d: %w", startOffset, endOffset, err)
+		return fmt.Errorf(errPrefix+"rangereader GET \"%s\" with headers %s reading body for range %d-%d: %w", rr.url, headersErrorString(req.Header), startOffset, endOffset, err)
 	}
 
 	return nil

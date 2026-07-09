@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -46,7 +47,7 @@ func NewClient(opts ClientOptions) *Client {
 func (c *Client) Open(ctx context.Context, url string, headers map[string]string) (io.ReadCloser, error) {
 	headReq, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf(errPrefix+"HEAD request creation failed: %w", err)
+		return nil, fmt.Errorf(errPrefix+"HEAD \"%s\" request creation failed: %w", url, err)
 	}
 	for k, v := range headers {
 		headReq.Header.Set(k, v)
@@ -54,12 +55,12 @@ func (c *Client) Open(ctx context.Context, url string, headers map[string]string
 
 	resp, err := c.httpClient.Do(headReq)
 	if err != nil {
-		return nil, fmt.Errorf(errPrefix+"HEAD request failed: %w", err)
+		return nil, fmt.Errorf(errPrefix+"HEAD \"%s\" with headers %s request failed: %w", url, headersErrorString(headReq.Header), err)
 	}
 	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(errPrefix+"HEAD returned unexpected status %d", resp.StatusCode)
+		return nil, fmt.Errorf(errPrefix+"HEAD \"%s\" with headers %s returned unexpected status %d", url, headersErrorString(headReq.Header), resp.StatusCode)
 	}
 
 	mediaType, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
@@ -74,4 +75,25 @@ func (c *Client) Open(ctx context.Context, url string, headers map[string]string
 	}
 
 	return rr, nil
+}
+
+func headersErrorString(headers http.Header) string {
+	var sb strings.Builder
+
+	first := true
+	for k := range headers {
+		if first {
+			first = false
+		} else {
+			sb.WriteString(",")
+		}
+
+		sb.WriteString("\"")
+		sb.WriteString(k)
+		sb.WriteString("\"=\"")
+		sb.WriteString(headers.Get(k))
+		sb.WriteString("\"")
+	}
+
+	return sb.String()
 }
