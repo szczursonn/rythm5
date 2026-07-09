@@ -4,7 +4,10 @@ go 1.26.4
 
 require github.com/disgoorg/disgo v0.19.6
 
-require github.com/disgoorg/godave/libdave v0.2.0 // indirect
+require (
+	github.com/disgoorg/godave/libdave v0.2.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
+)
 
 require (
 	github.com/BurntSushi/toml v1.6.0

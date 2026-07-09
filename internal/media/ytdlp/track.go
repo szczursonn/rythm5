@@ -12,15 +12,22 @@ import (
 	"github.com/szczursonn/rythm5/internal/media"
 )
 
+const youtubeWait = 3 * time.Second
+
 type track struct {
-	title             string
-	duration          time.Duration
-	webpageURL        string
-	streamURL         string
-	streamHTTPHeaders map[string]string
+	title      string
+	duration   time.Duration
+	webpageURL string
+	streamData *trackStreamData
 
 	mu sync.Mutex
 	qs *querySource
+}
+
+type trackStreamData struct {
+	validAfter  time.Time
+	url         string
+	httpHeaders map[string]string
 }
 
 var _ media.Track = (*track)(nil)
@@ -48,12 +55,22 @@ func (t *track) Stream(ctx context.Context) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	return t.qs.httpAudio.Open(ctx, t.streamURL, t.streamHTTPHeaders)
+	// FUCK GOOGLE
+	// the Youtube frontend is so shit nowadays that if you try to access the stream too fast the request fails cause a real client would be too slow to do it
+	//
+	// there should be a check here to ensure we are only waiting for Google bullshit to not fuck up Soundcloud playback, but I don't care
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-time.After(time.Until(t.streamData.validAfter)):
+	}
+
+	return t.qs.httpAudio.Open(ctx, t.streamData.url, t.streamData.httpHeaders)
 }
 
 func (t *track) ensureStreamData(ctx context.Context) error {
 	t.mu.Lock()
-	if t.streamURL != "" {
+	if t.streamData != nil {
 		t.mu.Unlock()
 		return nil
 	}
@@ -78,17 +95,16 @@ func (t *track) ensureStreamData(ctx context.Context) error {
 		return errors.New(errPrefix + "streamable track query returned unknown track type")
 	}
 
-	if typedTrack.streamURL == "" {
+	if typedTrack.streamData == nil {
 		return errors.New(errPrefix + "streamable track query returned track with no streaming data")
 	}
 
 	t.mu.Lock()
-	if t.streamURL == "" {
+	if t.streamData == nil {
 		t.title = typedTrack.title
 		t.duration = typedTrack.duration
 		t.webpageURL = typedTrack.webpageURL
-		t.streamURL = typedTrack.streamURL
-		t.streamHTTPHeaders = typedTrack.streamHTTPHeaders
+		t.streamData = typedTrack.streamData
 	}
 	t.mu.Unlock()
 
@@ -107,9 +123,12 @@ func (qs *querySource) extractTrack(yre *ytdlpResultEntry) (*track, error) {
 	}
 
 	for _, format := range yre.Formats {
-		if (format.Protocol == "http" || format.Protocol == "https") && format.URL != "" && format.ACodec != "none" {
-			t.streamURL = format.URL
-			t.streamHTTPHeaders = format.HTTPHeaders
+		if (format.Protocol == "http" || format.Protocol == "https") && format.URL != "" && format.ACodec != "none" && format.ACodec != "" {
+			t.streamData = &trackStreamData{
+				url:         format.URL,
+				httpHeaders: format.HTTPHeaders,
+				validAfter:  time.Now().Add(youtubeWait),
+			}
 			break
 		}
 	}
