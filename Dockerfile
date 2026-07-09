@@ -1,9 +1,9 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1
 
 ARG GO_VERSION=1.26.4
 ARG LIBDAVE_VERSION=1.1.1
-ARG YTDLP_VERSION=2026.06.09
-ARG DENO_VERSION=2.8.2
+ARG YTDLP_VERSION=2026.07.04
+ARG DENO_VERSION=2.9.2
 
 FROM debian:trixie-slim AS libdavefetcher
 ARG LIBDAVE_VERSION
